@@ -1,14 +1,70 @@
-from sklearn.metrics.pairwise import cosine_similarity
+import cv2
 import numpy as np
+from insightface.app import FaceAnalysis
+from sklearn.metrics.pairwise import cosine_similarity
 
-class FaceRecognizer:
-    def __init__(self, known_face_encodings, known_face_names):
-        self.known_face_encodings = known_face_encodings
-        self.known_face_names = known_face_names
+"""
+顔認証するためのモジュール
+"""
+class FaceRecognition:
+    def __init__(self, ctx_id=-1):
+        """
+        FaceRecognition の初期化。
+        :param ctx_id: GPU (-1 for CPU) を指定。
+        """
+        self.app = FaceAnalysis()
+        self.app.prepare(ctx_id=ctx_id)  # モデルの準備
+        self.database = {}  # 登録データベース
 
-    def recognize(self, face_encoding):
-        similarities = cosine_similarity([face_encoding], self.known_face_encodings)
-        best_match_index = np.argmax(similarities)
-        if similarities[0, best_match_index] > 0.5:  # 類似度のしきい値
-            return self.known_face_names[best_match_index]
-        return "Unknown"
+    def enroll_person(self, person_id, image_paths):
+        """
+        特定の個人の画像を登録し、特徴ベクトルを保存する。
+        :param person_id: 個人を識別するID。
+        :param image_paths: 登録する画像のパスのリスト。
+        """
+        embeddings = []
+        for image_path in image_paths:
+            img = cv2.imread(image_path)
+            if img is None:
+                print(f"Error: Could not read image {image_path}")
+                continue
+
+            faces = self.app.get(img)
+            if len(faces) == 0:
+                print(f"No face detected in {image_path}")
+                continue
+
+            for face in faces:
+                embeddings.append(face.normed_embedding)
+
+        self.database[person_id] = embeddings
+        print(f"Registered {len(embeddings)} embeddings for person ID '{person_id}'")
+
+    def verify_person(self, input_image_path, person_id, threshold=0.9):
+        """
+        入力画像が指定された個人の登録画像と一致するか確認する。
+        :param input_image_path: 認証する画像のパス。
+        :param person_id: 照合する登録済みの個人ID。
+        :param threshold: 類似度の閾値。
+        :return: 照合結果のメッセージ。
+        """
+        img = cv2.imread(input_image_path)
+        if img is None:
+            raise FileNotFoundError(f"Error: Could not read image {input_image_path}")
+
+        faces = self.app.get(img)
+        if len(faces) == 0:
+            return "No face detected in the input image."
+
+        input_embedding = faces[0].normed_embedding
+        if person_id not in self.database:
+            return f"Person ID '{person_id}' not found in database."
+
+        registered_embeddings = self.database[person_id]
+        similarities = [cosine_similarity([input_embedding], [embedding])[0][0] for embedding in registered_embeddings]
+        max_similarity = max(similarities)
+
+        if max_similarity > threshold:
+            return f"Match with similarity {max_similarity:.2f}"
+        else:
+            return f"No match (highest similarity: {max_similarity:.2f})"
