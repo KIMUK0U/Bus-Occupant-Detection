@@ -39,20 +39,19 @@ class FaceRecognition:
 
         self.database[person_id] = embeddings
         print(f"Registered {len(embeddings)} embeddings for person ID '{person_id}'")
-
-    def verify_person(self, input_image_path, person_id, threshold=0.9):
+    
+    def verify_person(self, input_image, person_id, threshold=0.9):
         """
         入力画像が指定された個人の登録画像と一致するか確認する。
-        :param input_image_path: 認証する画像のパス。
+        :param input_image: 認証する画像（numpy.ndarray）。
         :param person_id: 照合する登録済みの個人ID。
         :param threshold: 類似度の閾値。
         :return: 照合結果のメッセージ。
         """
-        img = cv2.imread(input_image_path)
-        if img is None:
-            raise FileNotFoundError(f"Error: Could not read image {input_image_path}")
+        if input_image is None:
+            raise ValueError("Error: Input image is None.")
 
-        faces = self.app.get(img)
+        faces = self.app.get(input_image)
         if len(faces) == 0:
             return "No face detected in the input image."
 

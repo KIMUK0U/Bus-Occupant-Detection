@@ -11,9 +11,9 @@ def main():
     # 登録フェーズ
     person_id = "user1234"
     image_paths = [
-        "face/output_jpg/myface01.jpg",
-        "face/output_jpg/myface02.jpg",
-        "face/output_jpg/myface03.jpg"
+        "data/faces/user1/face_0.jpg",
+        "data/faces/user1/face_1.jpg",
+        "data/faces/user1/face_2.jpg"
     ]
     face_recognition.enroll_person(person_id, image_paths)
 
