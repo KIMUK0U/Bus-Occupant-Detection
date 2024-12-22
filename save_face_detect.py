@@ -33,7 +33,10 @@ def save_faces_from_image(input_image_path, output_directory, face_confidence_th
             fx1, fy1, fx2, fy2, confidence = face
             if confidence < face_confidence_threshold:
                 continue
-
+            fx1 -= 220
+            fy1 -= 320
+            fx2 += 120
+            fy2 += 80
             # 顔領域を切り抜き
             cropped_face = cropped_person[fy1:fy2, fx1:fx2]
 
@@ -46,7 +49,7 @@ def save_faces_from_image(input_image_path, output_directory, face_confidence_th
     print(f"合計{face_count}枚の顔画像を保存しました。")
 
 if __name__ == "__main__":
-    input_image_path = "data/SampleJpg/user1face4.jpg"  # 入力画像のパス
+    input_image_path = "data/SampleJpg/user1face1.jpg"  # 入力画像のパス
     output_directory = "data/faces/user1"      # 顔画像の保存先ディレクトリ
 
     # ディレクトリが存在しない場合は作成

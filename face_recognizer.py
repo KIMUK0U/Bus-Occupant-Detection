@@ -40,7 +40,7 @@ class FaceRecognition:
         self.database[person_id] = embeddings
         print(f"Registered {len(embeddings)} embeddings for person ID '{person_id}'")
     
-    def verify_person(self, input_image, person_id, threshold=0.9):
+    def verify_person(self, input_image, person_id, threshold=0.6):
         """
         入力画像が指定された個人の登録画像と一致するか確認する。
         :param input_image: 認証する画像（numpy.ndarray）。

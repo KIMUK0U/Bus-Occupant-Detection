@@ -48,19 +48,47 @@ def main():
             track_id = track.track_id
             ltrb = track.to_ltrb()
             person_roi = frame[int(ltrb[1]):int(ltrb[3]), int(ltrb[0]):int(ltrb[2])]
+            if person_roi is None or person_roi.size == 0:
+                print("Error: person_roi is empty or invalid!")
+                continue
 
             faces = face_detector.detect(person_roi)
+            #デバック: 検出結果を確認
+            if faces:
+                print(f"Detected {len(faces)} face(s) in person ROI")
+            else:
+                print("No face detected in person ROI")
             for x1, y1, x2, y2, confidence in faces:
+                # person_roiのサイズを取得
+                h, w, _ = person_roi.shape
+
+                # 座標の範囲を調整
+                margin = 100  # 200ピクセルのマージンを追加
+                x1 = max(0, x1 - margin)
+                y1 = max(0, y1 - margin)
+                x2 = min(w, x2 + margin)
+                y2 = min(h, y2 + margin)
                 face_roi = person_roi[y1:y2, x1:x2]
+
+                if face_roi is None or face_roi.size == 0:
+                    print("Error: face_roi is empty!")
+                    continue
+
 
                 # 顔認証
                 name = "unknown"
                 for person_id in face_recognizer.database.keys():
                     result = face_recognizer.verify_person(face_roi, person_id)
+                    #デバック:　認証結果を確認
+                    print(f"Verification result for {person_id}: {result}")
                     if "Match" in result:
                         name = person_id
                         break
 
+                x1 = max(0, x1 + margin)
+                y1 = max(0, y1 + margin)
+                x2 = min(w, x2 - margin)
+                y2 = min(h, y2 - margin)
                 # 結果を描画
                 cv2.rectangle(frame, (int(ltrb[0]) + x1, int(ltrb[1]) + y1),
                               (int(ltrb[0]) + x2, int(ltrb[1]) + y2), (0, 255, 0), 2)
