@@ -3,7 +3,7 @@ import cv2
 
 class FaceDetector:
     def __init__(self):
-        self.face_detection = mp.solutions.face_detection.FaceDetection(min_detection_confidence=0.5)
+        self.face_detection = mp.solutions.face_detection.FaceDetection(min_detection_confidence=0.4)
 
     def detect(self, frame):
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

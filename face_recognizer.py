@@ -3,9 +3,6 @@ import numpy as np
 from insightface.app import FaceAnalysis
 from sklearn.metrics.pairwise import cosine_similarity
 
-"""
-顔認証するためのモジュール
-"""
 class FaceRecognition:
     def __init__(self, ctx_id=-1):
         """
@@ -40,7 +37,16 @@ class FaceRecognition:
         self.database[person_id] = embeddings
         print(f"Registered {len(embeddings)} embeddings for person ID '{person_id}'")
     
-    def verify_person(self, input_image, person_id, threshold=0.6):
+    def enroll_multiple_persons(self, persons_data):
+        """
+        複数の個人を登録する。
+        :param persons_data: 辞書形式で登録するデータ。{person_id: [image_paths], ...}
+        """
+        for person_id, image_paths in persons_data.items():
+            print(f"Registering person ID '{person_id}' with {len(image_paths)} images...")
+            self.enroll_person(person_id, image_paths)
+
+    def verify_person(self, input_image, person_id, threshold=0.5):
         """
         入力画像が指定された個人の登録画像と一致するか確認する。
         :param input_image: 認証する画像（numpy.ndarray）。
@@ -51,7 +57,7 @@ class FaceRecognition:
         if input_image is None:
             raise ValueError("Error: Input image is None.")
 
-        faces = self.app.get(input_image)
+        faces = self.app.get(input_image)  # jetson orin nanoで数十ミリ秒程度の推論時間
         if len(faces) == 0:
             return "No face detected in the input image."
 
@@ -60,8 +66,11 @@ class FaceRecognition:
             return f"Person ID '{person_id}' not found in database."
 
         registered_embeddings = self.database[person_id]
+        if not registered_embeddings:
+            return f"No embeddings found for Person ID '{person_id}'."
+
         similarities = [cosine_similarity([input_embedding], [embedding])[0][0] for embedding in registered_embeddings]
-        max_similarity = max(similarities)
+        max_similarity = max(similarities) if similarities else 0
 
         if max_similarity > threshold:
             return f"Match with similarity {max_similarity:.2f}"

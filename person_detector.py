@@ -2,7 +2,7 @@ from ultralytics import YOLO
 import cv2
 
 class PersonDetector:
-    def __init__(self, model_path="yolov8n.pt", input_size=(640, 640), confidence_threshold=0.8):
+    def __init__(self, model_path="yolov8n.pt", input_size=(640, 640), confidence_threshold=0.7):
         """
         PersonDetectorクラスの初期化
         :param model_path: YOLOモデルのパス
