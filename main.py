@@ -3,11 +3,13 @@ from person_detector import PersonDetector
 from face_detector import FaceDetector
 from face_recognizer import FaceRecognition
 from deep_sort_realtime.deepsort_tracker import DeepSort
+from sklearn.metrics.pairwise import cosine_similarity
+
 
 def initialize_modules():
     """モジュールの初期化を行う"""
     person_detector = PersonDetector()
-    face_detector = FaceDetector()
+    # face_detector = FaceDetector() 使用する必要ない
     face_recognizer = FaceRecognition()
     tracker = DeepSort()
 
@@ -16,10 +18,13 @@ def initialize_modules():
     persons_data = {
         "KIMURA KOTA": [
             "data/faces/user1/face_0.jpg",
-            "data/faces/user1/face_1.jpg"
+            "data/faces/user1/face_1.jpg",
+            "data/faces/user1/face_2.jpg",
+            "data/faces/user1/face_3.jpg"
         ],
         "KOIKE YUTA": [
-            "data/faces/user2/face_0.jpg"
+            "data/faces/user2/face_0.jpg",
+            "data/faces/user1/face_1.jpg"
         ],
         "YASUI": [
             "data/faces/user3/face_0.jpg"
@@ -27,53 +32,53 @@ def initialize_modules():
         "KUROZAWA": [
             "data/faces/user4/face_0.jpg",
             "data/faces/user4/face_1.jpg"
+        ],
+        "HOUJOU": [
+            "data/faces/user1/face_0.jpg"
         ]
     }
     # 一括登録
     face_recognizer.enroll_multiple_persons(persons_data)
 
-    return person_detector, face_detector, face_recognizer, tracker
+    return person_detector, face_recognizer, tracker
 
-def detect_and_recognize_faces(person_roi, face_detector, face_recognizer, track_id, tracked_names):
-    """`person_roi` から顔検出と認識を行う"""
+def detect_and_recognize_faces(person_roi, face_recognizer, track_id, tracked_names):
+    """人物領域から顔認証を行う"""
     if track_id in tracked_names and tracked_names[track_id] != "unknown":
         return tracked_names[track_id]
 
-    faces = face_detector.detect(person_roi)
+    # InsightFaceを使用して顔検出
+    faces = face_recognizer.app.get(person_roi)
     name = "unknown"
 
-    if faces:
+    if len(faces) > 0:
         print(f"Detected {len(faces)} face(s) in person ROI")
-        h, w, _ = person_roi.shape
-        for x1, y1, x2, y2, confidence in faces:
-            # 座標の範囲を調整
-            margin = 100
-            x1 = max(0, x1 - margin)
-            y1 = max(0, y1 - margin)
-            x2 = min(w, x2 + margin)
-            y2 = min(h, y2 + margin)
-            face_roi = person_roi[y1:y2, x1:x2]
+        for face in faces:
+            input_embedding = face.normed_embedding
 
-            if face_roi is None or face_roi.size == 0:
-                print("Error: face_roi is empty!")
-                continue
+            # データベースと照合
+            max_similarity = 0
+            matched_person = "unknown"
+            for person_id, embeddings in face_recognizer.database.items():
+                similarities = [cosine_similarity([input_embedding], [embedding])[0][0] for embedding in embeddings]
+                similarity = max(similarities) if similarities else 0
 
-            # 顔認証
-            for person_id in face_recognizer.database.keys():
-                print("Mark3")
-                result = face_recognizer.verify_person(face_roi, person_id)
-                print(f"Verification result for {person_id}: {result}")
-                if "Match" in result:
-                    name = person_id
-                    break
+                if similarity > max_similarity:
+                    max_similarity = similarity
+                    matched_person = person_id
 
-            if name != "unknown":
+            # 類似度が閾値を超えた場合に認証成功とする
+            if max_similarity > 0.5:
+                name = matched_person
                 tracked_names[track_id] = name
-                break
+                print(f"Matched with {name}, similarity: {max_similarity:.2f}")
+                return name
 
+    print("No match found or no faces detected.")
     return name
 
-def process_frame(frame, person_detector, face_detector, face_recognizer, tracker, tracked_names):
+
+def process_frame(frame, person_detector, face_recognizer, tracker, tracked_names):
     """フレームごとに処理を行う"""
     person_detections = person_detector.detect(frame)
     formatted_detections = [
@@ -89,13 +94,14 @@ def process_frame(frame, person_detector, face_detector, face_recognizer, tracke
         ltrb = track.to_ltrb()
 
         person_roi = frame[int(ltrb[1]):int(ltrb[3]), int(ltrb[0]):int(ltrb[2])]
-        if person_roi is None or person_roi.size == 0:
+        if person_roi.size == 0:
             print("Error: person_roi is empty or invalid!")
             name = "Unknown"
         else:
-            name = detect_and_recognize_faces(person_roi, face_detector, face_recognizer, track_id, tracked_names)
+            name = detect_and_recognize_faces(person_roi, face_recognizer, track_id, tracked_names)
 
         draw_results(frame, ltrb, track_id, name)
+
 
 def draw_results(frame, ltrb, track_id, name):
     """描画を行う"""
@@ -105,7 +111,7 @@ def draw_results(frame, ltrb, track_id, name):
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
 def main():
-    person_detector, face_detector, face_recognizer, tracker = initialize_modules()
+    person_detector, face_recognizer, tracker = initialize_modules()
     tracked_names = {}
 
     cap = cv2.VideoCapture(0)
@@ -114,7 +120,7 @@ def main():
         if not ret:
             break
 
-        process_frame(frame, person_detector, face_detector, face_recognizer, tracker, tracked_names)
+        process_frame(frame, person_detector, face_recognizer, tracker, tracked_names)
 
         cv2.imshow("Real-Time Detection", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):
@@ -122,6 +128,7 @@ def main():
 
     cap.release()
     cv2.destroyAllWindows()
+
 
 if __name__ == "__main__":
     main()

@@ -5,19 +5,21 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 class FaceRecognition:
     def __init__(self, ctx_id=-1):
-        """
-        FaceRecognition の初期化。
-        :param ctx_id: GPU (-1 for CPU) を指定。
-        """
         self.app = FaceAnalysis()
         self.app.prepare(ctx_id=ctx_id)  # モデルの準備
         self.database = {}  # 登録データベース
+        print(f"Using model: {self.app.models}")
+        print(f"Recognition model details: {self.app.models['recognition']}")
+        # モデルの詳細を確認
+        arcface_model = self.app.models["recognition"]
+        print(f"Model path: {arcface_model.model_file}")
+
+
+
 
     def enroll_person(self, person_id, image_paths):
         """
         特定の個人の画像を登録し、特徴ベクトルを保存する。
-        :param person_id: 個人を識別するID。
-        :param image_paths: 登録する画像のパスのリスト。
         """
         embeddings = []
         for image_path in image_paths:
@@ -36,11 +38,10 @@ class FaceRecognition:
 
         self.database[person_id] = embeddings
         print(f"Registered {len(embeddings)} embeddings for person ID '{person_id}'")
-    
+
     def enroll_multiple_persons(self, persons_data):
         """
         複数の個人を登録する。
-        :param persons_data: 辞書形式で登録するデータ。{person_id: [image_paths], ...}
         """
         for person_id, image_paths in persons_data.items():
             print(f"Registering person ID '{person_id}' with {len(image_paths)} images...")
@@ -49,15 +50,11 @@ class FaceRecognition:
     def verify_person(self, input_image, person_id, threshold=0.5):
         """
         入力画像が指定された個人の登録画像と一致するか確認する。
-        :param input_image: 認証する画像（numpy.ndarray）。
-        :param person_id: 照合する登録済みの個人ID。
-        :param threshold: 類似度の閾値。
-        :return: 照合結果のメッセージ。
         """
         if input_image is None:
             raise ValueError("Error: Input image is None.")
 
-        faces = self.app.get(input_image)  # jetson orin nanoで数十ミリ秒程度の推論時間
+        faces = self.app.get(input_image)  # 顔検出と特徴抽出
         if len(faces) == 0:
             return "No face detected in the input image."
 
