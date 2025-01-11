@@ -1,7 +1,19 @@
+"""
+This script uses InsightFace's FaceAnalysis module for face recognition and detection.
+
+InsightFace is licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+"""
+
 import cv2
 import numpy as np
 from insightface.app import FaceAnalysis
 from sklearn.metrics.pairwise import cosine_similarity
+
+
 
 class FaceRecognition:
     def __init__(self, ctx_id=-1):
@@ -47,7 +59,7 @@ class FaceRecognition:
             print(f"Registering person ID '{person_id}' with {len(image_paths)} images...")
             self.enroll_person(person_id, image_paths)
 
-    def verify_person(self, input_image, person_id, threshold=0.5):
+    def verify_person(self, input_image, person_id, threshold=0.7):
         """
         入力画像が指定された個人の登録画像と一致するか確認する。
         """

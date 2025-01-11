@@ -1,115 +1,15 @@
 # demoVideo.py
-
 import cv2
 from person_detector import PersonDetector
 from face_recognizer import FaceRecognition
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from sklearn.metrics.pairwise import cosine_similarity
-
-
-
-def initialize_modules():
-    """モジュールの初期化を行う"""
-    person_detector = PersonDetector()
-    face_recognizer = FaceRecognition()
-    tracker = DeepSort()
-
-    # ユーザー登録
-    persons_data = {
-        "KIMURA KOTA": [
-            "data/faces/user1/face_0.jpg",
-            "data/faces/user1/face_1.jpg",
-            "data/faces/user1/face_2.jpg",
-            "data/faces/user1/face_3.jpg"
-        ],
-        "KOIKE YUTA": [
-            "data/faces/user2/face_0.jpg",
-            "data/faces/user2/face_1.jpg"
-        ],
-        "YASUI": [
-            "data/faces/user3/face_0.jpg"
-        ],
-        "KUROZAWA": [
-            "data/faces/user4/face_0.jpg",
-            "data/faces/user4/face_1.jpg"
-        ],
-        "HOUJOU": [
-            "data/faces/user1/face_0.jpg"
-        ]
-    }
-    face_recognizer.enroll_multiple_persons(persons_data)
-
-    return person_detector, face_recognizer, tracker
-
-
-def detect_and_recognize_faces(person_roi, face_recognizer, track_id, tracked_names):
-    """人物領域から顔認証を行う"""
-    if track_id in tracked_names and tracked_names[track_id] != "unknown":
-        return tracked_names[track_id]
-
-    faces = face_recognizer.app.get(person_roi)
-    name = "unknown"
-
-    if len(faces) > 0:
-        print(f"Detected {len(faces)} face(s) in person ROI")
-        for face in faces:
-            input_embedding = face.normed_embedding
-
-            max_similarity = 0
-            matched_person = "unknown"
-            for person_id, embeddings in face_recognizer.database.items():
-                similarities = [cosine_similarity([input_embedding], [embedding])[0][0] for embedding in embeddings]
-                similarity = max(similarities) if similarities else 0
-
-                if similarity > max_similarity:
-                    max_similarity = similarity
-                    matched_person = person_id
-
-            if max_similarity > 0.5:
-                name = matched_person
-                tracked_names[track_id] = name
-                print(f"Matched with {name}, similarity: {max_similarity:.2f}")
-                return name
-
-    print("No match found or no faces detected.")
-    return name
-
-
-def process_frame(frame, person_detector, face_recognizer, tracker, tracked_names):
-    """フレームごとに処理を行う"""
-    person_detections = person_detector.detect(frame)
-    formatted_detections = [
-        (bbox, confidence, class_id) for bbox, confidence, class_id in person_detections
-    ]
-    tracks = tracker.update_tracks(formatted_detections, frame=frame)
-
-    for track in tracks:
-        if not track.is_confirmed():
-            continue
-
-        track_id = track.track_id
-        ltrb = track.to_ltrb()
-
-        person_roi = frame[int(ltrb[1]):int(ltrb[3]), int(ltrb[0]):int(ltrb[2])]
-        if person_roi.size == 0:
-            print("Error: person_roi is empty or invalid!")
-            name = "Unknown"
-        else:
-            name = detect_and_recognize_faces(person_roi, face_recognizer, track_id, tracked_names)
-
-        draw_results(frame, ltrb, track_id, name)
-
-
-def draw_results(frame, ltrb, track_id, name):
-    """描画を行う"""
-    cv2.rectangle(frame, (int(ltrb[0]), int(ltrb[1])), (int(ltrb[2]), int(ltrb[3])), (0, 255, 0), 2)
-    cv2.putText(frame, f"ID: {track_id}, Name: {name}",
-                (int(ltrb[0]), int(ltrb[1]) - 10),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+from real_time_face_recognition import initialize_modules, detect_and_recognize_faces, process_frame, draw_results
+from config import VIDEO_PATH
 
 
 def main():
-    video_path = "data\VideoAfterEdit\Beside\IMG_1950.MOV"  # デモ動画のパス
+    video_path = VIDEO_PATH  # デモ動画のパス
     person_detector, face_recognizer, tracker = initialize_modules()
     tracked_names = {}
 
@@ -117,19 +17,41 @@ def main():
     if not cap.isOpened():
         print(f"Error: Could not open video {video_path}")
         return
+    # ---【追加】 出力動画ファイルの準備 -------------------------------
+    # ※ 出力パスやFPS、画質などは適宜変更してください
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # mp4形式
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    out = cv2.VideoWriter("output_demo.mp4", fourcc, fps, (width, height))
+    # -----------------------------------------------------------------
 
+    count=0
     while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
+        count +=1
+        if count % 2 == 0:
 
-        process_frame(frame, person_detector, face_recognizer, tracker, tracked_names)
+            ret, frame = cap.read()
+            if not ret:
+                break
 
-        cv2.imshow("Video Demo - Real-Time Detection", frame)
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
+            process_frame(frame, person_detector, face_recognizer, tracker, tracked_names)
+            
+            # ---【追加】 保存用に書き出し ----------------------------
+            out.write(frame)
+            # ------------------------------------------------------
+
+            cv2.imshow("Video Demo - Real-Time Detection", frame)
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
+        else:
+            # 連続で読み進めるだけ
+            _ = cap.read()
 
     cap.release()
+    # ---【追加】 VideoWriterを必ず解放する ----
+    out.release()
+    # -----------------------------------------
     cv2.destroyAllWindows()
 
 
