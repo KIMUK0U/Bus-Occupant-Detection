@@ -23,13 +23,13 @@ def main():
     fps = cap.get(cv2.CAP_PROP_FPS)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    out = cv2.VideoWriter("output_demo.mp4", fourcc, fps, (width, height))
+    out = cv2.VideoWriter("output_demo9.mp4", fourcc, fps, (width, height))
     # -----------------------------------------------------------------
 
     count=0
     while cap.isOpened():
         count +=1
-        if count % 2 == 0:
+        if count % 1 == 0:
 
             ret, frame = cap.read()
             if not ret:

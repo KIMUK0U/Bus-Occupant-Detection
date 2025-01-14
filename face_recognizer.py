@@ -59,7 +59,7 @@ class FaceRecognition:
             print(f"Registering person ID '{person_id}' with {len(image_paths)} images...")
             self.enroll_person(person_id, image_paths)
 
-    def verify_person(self, input_image, person_id, threshold=0.7):
+    def verify_person(self, input_image, person_id, threshold=0.6):
         """
         入力画像が指定された個人の登録画像と一致するか確認する。
         """

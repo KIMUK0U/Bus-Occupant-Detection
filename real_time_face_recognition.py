@@ -77,7 +77,7 @@ def detect_and_recognize_faces(person_roi, face_recognizer, track_id, tracked_na
                 name = matched_person
 
         # 類似度が閾値を超えた場合に認証成功とする
-        if max_similarity_global > 0.5:
+        if max_similarity_global > 0.6:
             tracked_names[track_id] = name
             print(f"Matched with {name}, similarity: {max_similarity_global:.2f}")
             return name, max_similarity_global
