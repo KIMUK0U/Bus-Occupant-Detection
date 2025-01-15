@@ -18,26 +18,29 @@ def initialize_modules():
     # 登録データの辞書
     persons_data = {
         "KIMURA KOTA": [
-            "data/faces/user1/face_0.jpg",
-            "data/faces/user1/face_1.jpg",
-            "data/faces/user1/face_2.jpg",
-            "data/faces/user1/face_3.jpg",
-            "data/faces/user1/face_4.jpg",
-            "data/faces/user1/face_5.jpg"
+            "Bus_Occupant_Detect/faces/user1/face_0.jpg",
+            "Bus_Occupant_Detect/faces/user1/face_1.jpg",
+            "Bus_Occupant_Detect/faces/user1/face_2.jpg",
+            "Bus_Occupant_Detect/faces/user1/face_3.jpg",
+            "Bus_Occupant_Detect/faces/user1/face_4.jpg",
+            "Bus_Occupant_Detect/faces/user1/face_5.jpg"
         ],
         "KOIKE YUTA": [
-            "data/faces/user2/face_0.jpg",
-            "data/faces/user1/face_1.jpg"
+            "Bus_Occupant_Detect/faces/user2/face_0.jpg",
+            "Bus_Occupant_Detect/faces/user1/face_1.jpg"
         ],
         "YASUI": [
-            "data/faces/user3/face_0.jpg"
+            "Bus_Occupant_Detect/faces/user3/face_0.jpg",
+            "Bus_Occupant_Detect/faces/user3/face_1.jpg",
+            "Bus_Occupant_Detect/faces/user3/face_2.jpg",
+            "Bus_Occupant_Detect/faces/user3/face_3.jpg"
         ],
         "KUROZAWA": [
-            "data/faces/user4/face_0.jpg",
-            "data/faces/user4/face_1.jpg"
+            "Bus_Occupant_Detect/faces/user4/face_0.jpg",
+            "Bus_Occupant_Detect/faces/user4/face_1.jpg"
         ],
         "HOUJOU": [
-            "data/faces/user1/face_0.jpg"
+            "Bus_Occupant_Detect/faces/user1/face_0.jpg"
         ]
     }
     # 一括登録
