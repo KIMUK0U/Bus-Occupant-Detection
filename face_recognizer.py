@@ -13,25 +13,30 @@ import numpy as np
 from insightface.app import FaceAnalysis
 from sklearn.metrics.pairwise import cosine_similarity
 
-
-
 class FaceRecognition:
     def __init__(self, ctx_id=-1):
+        """
+        Initializes the FaceRecognition class and prepares the InsightFace model.
+
+        :param ctx_id: int
+            Context ID for the model (default is -1, which uses CPU).
+        """
         self.app = FaceAnalysis()
-        self.app.prepare(ctx_id=ctx_id)  # モデルの準備
-        self.database = {}  # 登録データベース
+        self.app.prepare(ctx_id=ctx_id)  # Prepare the model
+        self.database = {}  # In-memory database for storing embeddings
         print(f"Using model: {self.app.models}")
         print(f"Recognition model details: {self.app.models['recognition']}")
-        # モデルの詳細を確認
         arcface_model = self.app.models["recognition"]
         print(f"Model path: {arcface_model.model_file}")
 
-
-
-
     def enroll_person(self, person_id, image_paths):
         """
-        特定の個人の画像を登録し、特徴ベクトルを保存する。
+        Registers a person's images and stores their feature vectors in the database.
+
+        :param person_id: str
+            Unique identifier for the person being enrolled.
+        :param image_paths: list of str
+            List of file paths to the person's images.
         """
         embeddings = []
         for image_path in image_paths:
@@ -53,7 +58,10 @@ class FaceRecognition:
 
     def enroll_multiple_persons(self, persons_data):
         """
-        複数の個人を登録する。
+        Registers multiple persons and their images.
+
+        :param persons_data: dict
+            Dictionary where keys are person IDs and values are lists of image file paths.
         """
         for person_id, image_paths in persons_data.items():
             print(f"Registering person ID '{person_id}' with {len(image_paths)} images...")
@@ -61,12 +69,21 @@ class FaceRecognition:
 
     def verify_person(self, input_image, person_id, threshold=0.6):
         """
-        入力画像が指定された個人の登録画像と一致するか確認する。
+        Verifies if the input image matches the registered images of the specified person.
+
+        :param input_image: numpy.ndarray
+            Input image to verify.
+        :param person_id: str
+            ID of the person to verify against.
+        :param threshold: float
+            Similarity threshold for a match (default is 0.6).
+        :return: str
+            Verification result with similarity score or error message.
         """
         if input_image is None:
             raise ValueError("Error: Input image is None.")
 
-        faces = self.app.get(input_image)  # 顔検出と特徴抽出
+        faces = self.app.get(input_image)  # Detect and extract features
         if len(faces) == 0:
             return "No face detected in the input image."
 
