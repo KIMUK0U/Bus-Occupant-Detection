@@ -127,6 +127,25 @@ class MinimalAttendanceManager:
             row = cursor.fetchone()
         return row  # (status, last_timestamp) or None
 
+        def show_all_status(self) -> None:
+        """
+        データベース内の全ユーザーの状態をターミナルに表示する。
+        """
+        select_query = """
+        SELECT user_id, status, last_timestamp
+        FROM current_status
+        """
+        with sqlite3.connect(self.db_name) as conn:
+            cursor = conn.execute(select_query)
+            rows = cursor.fetchall()
+
+        if rows:
+            print("\n[INFO] 現在の全ユーザーの状態:")
+            for row in rows:
+                print(f"User ID: {row[0]}, Status: {row[1]}, Last Timestamp: {row[2]}")
+        else:
+            print("\n[INFO] データベースにユーザー状態は存在しません。")
+
     def delete_user_status(self, user_id: str) -> None:
         """
         指定ユーザーの状態情報を削除する。

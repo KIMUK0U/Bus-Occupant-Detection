@@ -174,11 +174,9 @@ def main():
         cap.release()
         cv2.destroyAllWindows()
         
-        # テーブルを削除する場合
-        delete_data = input("Delete all attendance data? (y/n): ").lower()
-        if delete_data == "y":
-            attendance_manager.delete_all_status()
-            print("[INFO] 全てのデータを削除しました。")
+        # 全ユーザーの状態を表示
+        print("\n[INFO] カメラ停止後の全ユーザー状態を表示:")
+        attendance_manager.show_all_status()
 
 
 if __name__ == "__main__":
