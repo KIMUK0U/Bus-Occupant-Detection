@@ -31,6 +31,39 @@ class MinimalAttendanceManager:
             conn.execute(create_table_query)
             conn.commit()
 
+    def create_user_table(self) -> None:
+        """
+        登録された顔認証ユーザーの情報を格納するテーブルを作成する。
+        user_id: ユーザーID (主キー)
+        name: ユーザー名
+        """
+        create_table_query = """
+        CREATE TABLE IF NOT EXISTS registered_users (
+            user_id TEXT PRIMARY KEY,
+            name TEXT NOT NULL
+        )
+        """
+        with sqlite3.connect(self.db_name) as conn:
+            conn.execute(create_table_query)
+            conn.commit()
+
+    def register_users(self, user_data: dict) -> None:
+        """
+        登録ユーザー情報をデータベースに追加する。
+        user_data: {user_id: name} の形式の辞書
+        """
+        insert_query = """
+        INSERT INTO registered_users (user_id, name)
+        VALUES (?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET
+            name = excluded.name
+        """
+        with sqlite3.connect(self.db_name) as conn:
+            for user_id, name in user_data.items():
+                conn.execute(insert_query, (user_id, name))
+            conn.commit()
+        print(f"[INFO] {len(user_data)} ユーザーを登録しました。")
+
     def check_in(self, user_id: str) -> None:
         """
         指定ユーザーを「入室」状態にし、最終時刻を更新する。
@@ -66,6 +99,18 @@ class MinimalAttendanceManager:
             conn.execute(insert_query, (user_id, current_time))
             conn.commit()
         print(f"[INFO] {user_id} を check_out 状態にしました: {current_time}")
+
+    def update_attendance(self, user_id: str, camera_id: int) -> None:
+        """
+        指定ユーザーの状態をカメラIDに基づいて更新する。
+        camera_id: 0 -> 入室 (check_in), 1 -> 退室 (check_out)
+        """
+        if camera_id == 0:
+            self.check_in(user_id)
+        elif camera_id == 1:
+            self.check_out(user_id)
+        else:
+            print(f"[ERROR] 無効なカメラID: {camera_id}")
 
     def get_current_status(self, user_id: str):
         """

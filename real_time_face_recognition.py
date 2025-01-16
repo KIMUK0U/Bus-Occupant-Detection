@@ -3,9 +3,10 @@ from person_detector import PersonDetector
 from face_recognizer import FaceRecognition
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from sklearn.metrics.pairwise import cosine_similarity
+from attendance_manager import MinimalAttendanceManager
 
 """
-顔認証までのアルゴリズムがプログラムされた関数群
+顔認証までのアルゴリズムがプログラムされた関数
 """
 def initialize_modules():
     """モジュールの初期化を行う"""
@@ -13,6 +14,7 @@ def initialize_modules():
     # face_detector = FaceDetector() 使用する必要ない
     face_recognizer = FaceRecognition()
     tracker = DeepSort()
+    attendance_manager = MinimalAttendanceManager()
 
     # ユーザー登録
     # 登録データの辞書
@@ -45,8 +47,12 @@ def initialize_modules():
     }
     # 一括登録
     face_recognizer.enroll_multiple_persons(persons_data)
+    # 登録データをデータベースに保存
+    attendance_manager.create_user_table() # tableの作成
+    user_data = {f"user_{i+1}" name for i, name in enumerate(persons_data.keys())}
+    attendance_manager.register_users(user_data) # UserNameをtableに保存
 
-    return person_detector, face_recognizer, tracker
+    return person_detector, face_recognizer, tracker, attendance_manager
 
 def detect_and_recognize_faces(person_roi, face_recognizer, track_id, tracked_names):
     """人物領域から顔認証を行う"""
@@ -54,7 +60,7 @@ def detect_and_recognize_faces(person_roi, face_recognizer, track_id, tracked_na
         # すでに名前がわかっている場合、顔認識をスキップして再度認証しなくてもいい
         return tracked_names[track_id], 0.0
 
-    faces = face_recognizer.app.get(person_roi)
+    faces = face_recognizer.app.get(person_roi) # 顔認証の関数
     name = "unknown"
     max_similarity_global = 0.0  # ここで類似度を初期化
 
@@ -93,7 +99,10 @@ def detect_and_recognize_faces(person_roi, face_recognizer, track_id, tracked_na
 
 
 
-def process_frame(frame, person_detector, face_recognizer, tracker, tracked_names):
+def process_frame(frame, person_detector, face_recognizer, tracker, attendance_manager, tracked_names, camera_id):
+    """
+    引数でcamera_idを0（入室）または1（退室）で管理
+    """
     person_detections = person_detector.detect(frame)
     formatted_detections = [
         (bbox, confidence, class_id) for bbox, confidence, class_id in person_detections
@@ -115,6 +124,10 @@ def process_frame(frame, person_detector, face_recognizer, tracker, tracked_name
         else:
             name, similarity = detect_and_recognize_faces(person_roi, face_recognizer, track_id, tracked_names)
 
+        if  name != "unknown":
+            attendance_manager.update_attendance(name, camera_id)
+
+        # 人領域の描画を行いNameとSimilarityを描く関数（Jetsonでは使用しない）
         draw_results(frame, ltrb, track_id, name, similarity)
 
 
@@ -143,25 +156,29 @@ def main():
     person_detector, face_recognizer, tracker = initialize_modules()
     tracked_names = {}
 
+    camera_id = 0 # 入室カメラIDとして仮定
     count = 0
     cap = cv2.VideoCapture(0)
-    while cap.isOpened():
-        count+=1
-        if count%5 == 0:# 5フレームごとに検出
-            
+    try:
+        while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
                 break
 
-            process_frame(frame, person_detector, face_recognizer, tracker, tracked_names)
+            process_frame(frame, person_detector, face_recognizer, tracker, attendance_manager, tracked_names, camera_id)
 
             cv2.imshow("Real-Time Detection", frame)
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
-        else:
-            continue
-    cap.release()
-    cv2.destroyAllWindows()
+    finally:
+        cap.release()
+        cv2.destroyAllWindows()
+        
+        # テーブルを削除する場合
+        delete_data = input("Delete all attendance data? (y/n): ").lower()
+        if delete_data == "y":
+            attendance_manager.delete_all_status()
+            print("[INFO] 全てのデータを削除しました。")
 
 
 if __name__ == "__main__":
