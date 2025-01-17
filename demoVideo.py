@@ -10,8 +10,9 @@ from config import VIDEO_PATH
 
 def main():
     video_path = VIDEO_PATH  # デモ動画のパス
-    person_detector, face_recognizer, tracker = initialize_modules()
+    person_detector, face_recognizer, tracker, attendance_manager = initialize_modules()
     tracked_names = {}
+    camera_id = 0 # ドア正面と定義、入室を検知する
 
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -35,7 +36,7 @@ def main():
             if not ret:
                 break
 
-            process_frame(frame, person_detector, face_recognizer, tracker, tracked_names)
+            process_frame(frame, person_detector, face_recognizer, tracker, attendance_manager, tracked_names, camera_id)
             
             # ---【追加】 保存用に書き出し ----------------------------
             out.write(frame)
@@ -53,6 +54,9 @@ def main():
     out.release()
     # -----------------------------------------
     cv2.destroyAllWindows()
+    # 全ユーザーの状態を表示
+    print("\n[INFO] カメラ停止後の全ユーザー状態を表示:")
+    attendance_manager.show_all_status()
 
 
 if __name__ == "__main__":

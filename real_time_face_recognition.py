@@ -58,7 +58,7 @@ def initialize_modules():
 
     return person_detector, face_recognizer, tracker, attendance_manager
 
-def detect_and_recognize_faces(person_roi, face_recognizer, track_id, tracked_names):
+def detect_and_recognize_faces(person_roi, face_recognizer, track_id, tracked_names,attendance_manager,camera_id):
     """
     指定された人物領域から顔認証を実行し、登録データベースと照合する。
 
@@ -105,7 +105,10 @@ def detect_and_recognize_faces(person_roi, face_recognizer, track_id, tracked_na
         if max_similarity_global > 0.6:
             tracked_names[track_id] = name
             print(f"Matched with {name}, similarity: {max_similarity_global:.2f}")
+            if name != "Unknown":
+                attendance_manager.update_attendance(name, camera_id)
             return name, max_similarity_global
+            
         else:
             print(f"No matched. max_similarity: {max_similarity_global:.2f}")
             return "unknown", max_similarity_global
@@ -151,10 +154,8 @@ def process_frame(frame, person_detector, face_recognizer, tracker, attendance_m
             name = "Unknown"
             similarity = 0.0
         else:
-            name, similarity = detect_and_recognize_faces(person_roi, face_recognizer, track_id, tracked_names)
-
-        if name != "unknown":
-            attendance_manager.update_attendance(name, camera_id)
+            name, similarity = detect_and_recognize_faces(person_roi, face_recognizer, track_id, tracked_names, attendance_manager, camera_id)
+        
 
         # 人領域の描画を行いNameとSimilarityを描く関数（オプション）
         draw_results(frame, ltrb, track_id, name, similarity)
