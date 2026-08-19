@@ -57,7 +57,7 @@ fsspec==2024.10.0
 gast==0.6.0
 gdown==5.2.0
 gitdb==4.0.11
-GitPython==3.1.43
+GitPython==3.1.58
 google-auth==2.36.0
 google-cloud-audit-log==0.3.0
 google-crc32c==1.6.0
