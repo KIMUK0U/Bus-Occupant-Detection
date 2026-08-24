@@ -2,7 +2,7 @@ import cv2
 from lite_face_recognizer import LightweightFaceRecognition
 from lite_face_detecter import FaceDetector
 from person_detector import PersonDetector
-from lite_real_time_face_recognition import RealTimeFaceRecognition
+from lite_real_time_face_recognizer import RealTimeFaceRecognition
 
 if __name__ == "__main__":
     person_model_path = "path/to/yolov8_model.pt"
